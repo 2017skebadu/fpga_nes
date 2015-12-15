@@ -10,7 +10,6 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-use work.P6502_pkg.all;
 
 -- Same interface as cpu.v from fpga_nes project
 entity cpu is
@@ -33,11 +32,7 @@ end cpu;
 
 architecture structural of cpu is
 
-    signal uins             : Microinstruction;
-    signal instruction      : std_logic_vector(7 downto 0);
-    signal spr              : std_logic_vector(7 downto 0);
     signal count            : std_logic_vector(5 downto 0);
-    signal clk_n, nOffset   : std_logic;
     signal clk_div          : std_logic;
     signal CPUwe, we_n      : std_logic;
     
@@ -74,37 +69,7 @@ begin
             end if;
         end if;
    end process;
-
-    -- Data path operates in falling edge of clock in order to achieve synchronization on memory read 
-    clk_n <= not clk_div;
-    
-    DATA_PATH: entity work.DataPath
-        port map (
-            clk         => clk_n,
-            rst         => rst_in,
-            address     => address_temp,
-            data_in     => d_in,
-            data_out    => d_out,
-            spr_out     => spr,
-            nOffset_out => nOffset, 
-            uins        => uins
-        );
-        
-    CONTROL_PATH: entity work.ControlPath
-        port map (
-            clk         => clk_div,
-            rst         => rst_in,
-            uins        => uins,
-            spr_in      => spr,    
-            instruction => d_in,
-            we          => CPUwe,
-            nOffset_in  => nOffset,
-            ready       => ready_in,
-            nmi         => nnmi_in,
-            nres        => nres_in,
-            irq         => nirq_in
-        );
-    
+                
     we_n <= not CPUwe;
         
     -- Sync Memory Writes    
@@ -135,6 +100,20 @@ begin
         end if;
     end process; 
 																		
-    a_out <= reg_CPUaddress;       
+    a_out <= reg_CPUaddress; 
+
+    P6502: entity work.P6502
+        port map (
+            clk         => clk_div,
+            rst         => rst_in,
+            ready       => ready_in,
+            nmi         => nnmi_in,
+            nres        => nres_in,
+            irq         => nirq_in,
+            data_in     => d_in,
+            data_out    => d_out,
+            address_out => address_temp,
+            we          => CPUwe   
+        );    
      
 end structural;
