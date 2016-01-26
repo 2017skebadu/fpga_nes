@@ -9,7 +9,7 @@
 
 library IEEE;
 use IEEE.std_logic_1164.all;
-use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
 
 -- Same interface as cpu.v from fpga_nes project
 entity cpu is
@@ -32,7 +32,10 @@ end cpu;
 
 architecture structural of cpu is
 
-    signal count            : std_logic_vector(5 downto 0);
+    -- Address of the first NES games instruction
+    constant PC_INIT        : UNSIGNED(15 downto 0) := x"8000";
+    
+    signal count            : UNSIGNED(5 downto 0);
     signal clk_div          : std_logic;
     signal CPUwe, we_n      : std_logic;
     
@@ -103,6 +106,9 @@ begin
     a_out <= reg_CPUaddress; 
 
     P6502: entity work.P6502
+        generic map (
+            PC_INIT     => PC_INIT
+        )
         port map (
             clk         => clk_div,
             rst         => rst_in,
