@@ -37,17 +37,19 @@ module nes_top
   output wire       TXD,               // rs-232 tx signal
   output wire       VGA_HSYNC,         // vga hsync signal
   output wire       VGA_VSYNC,         // vga vsync signal
-  output wire [2:0] VGA_RED,           // vga red signal
-  output wire [2:0] VGA_GREEN,         // vga green signal
-  output wire [1:0] VGA_BLUE,          // vga blue signal
+  output wire [3:0] VGA_RED,           // vga red signal
+  output wire [3:0] VGA_GREEN,         // vga green signal
+  output wire [3:0] VGA_BLUE,          // vga blue signal
   output wire       NES_JOYPAD_CLK,    // joypad output clk signal
   output wire       NES_JOYPAD_LATCH,  // joypad output latch signal
-  output wire       AUDIO              // pwm output audio channel
+  output wire       AUDIO,             // pwm output audio channel
+  output wire       SHUT
 );
 
 //
 // System Memory Buses
 //
+assign SHUT = 1'b1;
 wire [ 7:0] cpumc_din;
 wire [15:0] cpumc_a;
 wire        cpumc_r_nw;
@@ -178,7 +180,9 @@ assign ppu_ri_sel  = cpumc_a[2:0];
 assign ppu_ri_ncs  = (cpumc_a[15:13] == 3'b001) ? 1'b0 : 1'b1;
 assign ppu_ri_r_nw = cpumc_r_nw;
 assign ppu_ri_din  = cpumc_din;
-
+assign VGA_BLUE[3:2] = 1'b0;
+assign VGA_RED[3] = 1'b0;
+assign VGA_GREEN[3] = 1'b0;
 ppu ppu_blk(
   .clk_in(CLK_100MHZ),
   .rst_in(BTN_SOUTH),
@@ -189,9 +193,9 @@ ppu ppu_blk(
   .vram_d_in(ppu_vram_din),
   .hsync_out(VGA_HSYNC),
   .vsync_out(VGA_VSYNC),
-  .r_out(VGA_RED),
-  .g_out(VGA_GREEN),
-  .b_out(VGA_BLUE),
+  .r_out(VGA_RED[2:0]),
+  .g_out(VGA_GREEN[2:0]),
+  .b_out(VGA_BLUE[1:0]),
   .ri_d_out(ppu_ri_dout),
   .nvbl_out(ppu_nvbl),
   .vram_a_out(ppu_vram_a),
