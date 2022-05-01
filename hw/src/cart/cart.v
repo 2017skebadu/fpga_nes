@@ -49,7 +49,13 @@ module cart
   input  wire [ 7:0] chr_d_in,         // chr-rom data in
   output wire [ 7:0] chr_d_out,        // chr-rom data out
   output wire        ciram_nce_out,    // vram chip enable (active low)
-  output wire        ciram_a10_out     // vram a10 value (controls mirroring)
+  output wire        ciram_a10_out,     // vram a10 value (controls mirroring)
+  
+  input      SD_CD,
+  output     SD_SCK,
+  output     SD_CMD,
+  inout [3:0]SD_DAT,
+  output[15:0]LED
 );
 
 wire        prgrom_bram_we;
@@ -58,15 +64,45 @@ wire [7:0]  prgrom_bram_dout;
 
 // Block ram instance for PRG-ROM memory range (0x8000 - 0xFFFF).  Will eventually be
 // replaced with SRAM.
-single_port_ram_sync #(.ADDR_WIDTH(15),
-                       .DATA_WIDTH(8)) prgrom_bram(
-  .clk(clk_in),
-  .we(prgrom_bram_we),
-  .addr_a(prgrom_bram_a),
-  .din_a(prg_d_in),
-  .dout_a(prgrom_bram_dout)
+//dual_port_ram_sync #(.ADDR_WIDTH(15),
+//                       .DATA_WIDTH(8)) prgrom_bram(
+//  .clk(clk_in),
+//  .we(prgrom_bram_we),
+//  .addr_a(prgrom_bram_a),
+//  .din_a(prg_d_in),
+//  .dout_a(prgrom_bram_dout)
+//);
+wire clk_b;
+wire [7:0] BRAM_data;
+wire [14:0] BRAM_addr;
+
+assign LED[15:8] = BRAM_data; 
+
+sd_interface sd (
+  .clk(clk_in),    
+  .addr_BRAM(BRAM_addr),  
+  .cart_cfg_upd(cfg_upd_in), 
+  .din_BRAM(BRAM_data),    
+  .clk_b(clk_b),
+  .SD_CD(SD_CD),
+  .SD_SCK(SD_SCK),
+  .SD_CMD(SD_CMD),
+  .SD_DAT(SD_DAT),
+  .LED(LED[7:0])
 );
 
+blk_mem_gen_0 prgrom_bram (
+  .clka(clk_in),    // input wire clka
+  .wea(prgrom_bram_we),      // input wire [0 : 0] wea
+  .addra(prgrom_bram_a),  // input wire [14 : 0] addra
+  .dina(prg_d_in),    // input wire [7 : 0] dina
+  .douta(prgrom_bram_dout),  // output wire [7 : 0] douta
+  .clkb(clk_b),    // input wire clkb
+  .web(1'b0),      // input wire [0 : 0] web
+  .addrb(BRAM_addr),  // input wire [14 : 0] addrb
+  .dinb(8'h00),    // input wire [7 : 0] dinb
+  .doutb(BRAM_data)  // output wire [7 : 0] doutb
+);
 assign prgrom_bram_we = (~prg_nce_in) ? ~prg_r_nw_in     : 1'b0;
 assign prg_d_out      = (~prg_nce_in) ? prgrom_bram_dout : 8'h00;
 assign prgrom_bram_a  = (cfg_in[33])  ? prg_a_in[14:0]   : { 1'b0, prg_a_in[13:0] };
@@ -75,7 +111,7 @@ wire       chrrom_pat_bram_we;
 wire [7:0] chrrom_pat_bram_dout;
 
 // Block ram instance for "CHR Pattern Table" memory range (0x0000 - 0x1FFF).
-single_port_ram_sync #(.ADDR_WIDTH(13),
+dual_port_ram_sync #(.ADDR_WIDTH(13),
                        .DATA_WIDTH(8)) chrrom_pat_bram(
   .clk(clk_in),
   .we(chrrom_pat_bram_we),

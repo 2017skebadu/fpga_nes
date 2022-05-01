@@ -43,8 +43,16 @@ module nes_top
   output wire       NES_JOYPAD_CLK,    // joypad output clk signal
   output wire       NES_JOYPAD_LATCH,  // joypad output latch signal
   output wire       AUDIO,             // pwm output audio channel
-  output wire       SHUT
+  output wire       SHUT,
+  input  wire       SD_CD,
+  output wire       SD_SCK,
+  output wire       SD_CMD,
+  inout  wire [3:0] SD_DAT,
+  output wire [15:0]led,
+  input  wire       BTNC
 );
+
+reg LED_out = 0;
 
 //
 // System Memory Buses
@@ -110,7 +118,7 @@ wire        cart_cfg_upd;
 cart cart_blk(
   .clk_in(CLK_100MHZ),
   .cfg_in(cart_cfg),
-  .cfg_upd_in(cart_cfg_upd),
+  .cfg_upd_in(BTNC), // cart_cfg_upd
   .prg_nce_in(cart_prg_nce),
   .prg_a_in(cpumc_a[14:0]),
   .prg_r_nw_in(cpumc_r_nw),
@@ -121,7 +129,12 @@ cart cart_blk(
   .chr_d_in(ppumc_din),
   .chr_d_out(cart_chr_dout),
   .ciram_nce_out(cart_ciram_nce),
-  .ciram_a10_out(cart_ciram_a10)
+  .ciram_a10_out(cart_ciram_a10),
+  .SD_CD(SD_CD),
+  .SD_SCK(SD_SCK),
+  .SD_CMD(SD_CMD),
+  .SD_DAT(SD_DAT),
+  .LED(led)
 );
 
 assign cart_prg_nce = ~cpumc_a[15];
@@ -260,6 +273,10 @@ assign hci_ppu_vram_din = cart_chr_dout | vram_dout;
 
 // Issue NMI interupt on PPU vertical blank.
 assign rp2a03_nnmi = ppu_nvbl;
+
+always @(posedge CLK_100MHZ) begin
+    LED_out <= BTNC;
+end
 
 endmodule
 
