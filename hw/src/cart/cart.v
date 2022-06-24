@@ -51,11 +51,14 @@ module cart
   output wire        ciram_nce_out,    // vram chip enable (active low)
   output wire        ciram_a10_out,     // vram a10 value (controls mirroring)
   
-  input      SD_CD,
-  output     SD_SCK,
-  output     SD_CMD,
-  inout [3:0]SD_DAT,
-  output[15:0]LED
+  input              SD_CD,
+  output             SD_SCK,
+  output             SD_CMD,
+  inout [3:0]        SD_DAT,
+  input              switch_load,
+  output[15:0]       LED
+//  input              res_in
+  
 );
 
 wire        prgrom_bram_we;
@@ -72,18 +75,21 @@ wire [7:0]  prgrom_bram_dout;
 //  .din_a(prg_d_in),
 //  .dout_a(prgrom_bram_dout)
 //);
-wire clk_b;
 wire [7:0] BRAM_data;
+wire [7:0] SD_data;
 wire [14:0] BRAM_addr;
+wire SD_write;
 
 assign LED[15:8] = BRAM_data; 
 
 sd_interface sd (
-  .clk(clk_in),    
+  .clk(clk_in),  
+  .switch_load(switch_load), 
   .addr_BRAM(BRAM_addr),  
   .cart_cfg_upd(cfg_upd_in), 
-  .din_BRAM(BRAM_data),    
-  .clk_b(clk_b),
+  .din_BRAM(BRAM_data),
+  .dout_BRAM(SD_data),
+  .w_out(SD_write),   
   .SD_CD(SD_CD),
   .SD_SCK(SD_SCK),
   .SD_CMD(SD_CMD),
@@ -97,10 +103,10 @@ blk_mem_gen_0 prgrom_bram (
   .addra(prgrom_bram_a),  // input wire [14 : 0] addra
   .dina(prg_d_in),    // input wire [7 : 0] dina
   .douta(prgrom_bram_dout),  // output wire [7 : 0] douta
-  .clkb(clk_b),    // input wire clkb
-  .web(1'b0),      // input wire [0 : 0] web
+  .clkb(clk_in),    // input wire clkb
+  .web(SD_write),      // input wire [0 : 0] web
   .addrb(BRAM_addr),  // input wire [14 : 0] addrb
-  .dinb(8'h00),    // input wire [7 : 0] dinb
+  .dinb(SD_data),    // input wire [7 : 0] dinb
   .doutb(BRAM_data)  // output wire [7 : 0] doutb
 );
 assign prgrom_bram_we = (~prg_nce_in) ? ~prg_r_nw_in     : 1'b0;

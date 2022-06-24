@@ -10,4 +10,5 @@ hw/nes_sample.ip_user_files/*
 hw/nes_sample.runs/*
 hw/nes_sample.sim/*
 hw/nes_sample.srcs/*
+hw/nes_sample.gen/*
 hw/nes_sample.xpr

@@ -31,7 +31,7 @@ module nes_top
   input  wire       BTN_SOUTH,         // reset push button
   input  wire       BTN_EAST,          // console reset
   input  wire       RXD,               // rs-232 rx signal
-  input  wire [3:0] SW,                // switches
+  input  wire [5:0] SW,                // switches
   input  wire       NES_JOYPAD_DATA1,  // joypad 1 input signal
   input  wire       NES_JOYPAD_DATA2,  // joypad 2 input signal
   output wire       TXD,               // rs-232 tx signal
@@ -96,7 +96,7 @@ rp2a03 rp2a03_blk(
   .jp_data2_in(NES_JOYPAD_DATA2),
   .jp_clk(NES_JOYPAD_CLK),
   .jp_latch(NES_JOYPAD_LATCH),
-  .mute_in(SW),
+  .mute_in(SW[3:0]),
   .audio_out(AUDIO),
   .dbgreg_sel_in(rp2a03_dbgreg_sel),
   .dbgreg_d_in(rp2a03_dbgreg_din),
@@ -119,6 +119,7 @@ cart cart_blk(
   .clk_in(CLK_100MHZ),
   .cfg_in(cart_cfg),
   .cfg_upd_in(BTNC), // cart_cfg_upd
+  .switch_load(SW[5]),
   .prg_nce_in(cart_prg_nce),
   .prg_a_in(cpumc_a[14:0]),
   .prg_r_nw_in(cpumc_r_nw),
@@ -135,6 +136,7 @@ cart cart_blk(
   .SD_CMD(SD_CMD),
   .SD_DAT(SD_DAT),
   .LED(led)
+//  .res_in(BTN_EAST)
 );
 
 assign cart_prg_nce = ~cpumc_a[15];
@@ -222,6 +224,7 @@ assign vram_a = { cart_ciram_a10, ppumc_a[9:0] };
 // HCI: host communication interface block.  Interacts with NesDbg software through serial port.
 //
 wire        hci_active;
+wire        their_hci_active;
 wire [ 7:0] hci_cpu_din;
 wire [ 7:0] hci_cpu_dout;
 wire [15:0] hci_cpu_a;
@@ -240,7 +243,7 @@ hci hci_blk(
   .cpu_dbgreg_in(rp2a03_dbgreg_dout),
   .ppu_vram_din(hci_ppu_vram_din),
   .tx(TXD),
-  .active(hci_active),
+  .active(their_hci_active),
   .cpu_r_nw(hci_cpu_r_nw),
   .cpu_a(hci_cpu_a),
   .cpu_dout(hci_cpu_dout),
@@ -255,6 +258,7 @@ hci hci_blk(
 );
 
 // Mux cpumc signals from rp2a03 or hci blk, depending on debug break state (hci_active).
+assign hci_active  = their_hci_active || SW[4];
 assign rp2a03_rdy  = (hci_active) ? 1'b0         : 1'b1;
 assign cpumc_a     = (hci_active) ? hci_cpu_a    : rp2a03_a;
 assign cpumc_r_nw  = (hci_active) ? hci_cpu_r_nw : rp2a03_r_nw;
