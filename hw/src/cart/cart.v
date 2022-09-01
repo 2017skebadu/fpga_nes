@@ -83,7 +83,7 @@ wire SD_write;
 assign LED[15:8] = BRAM_data; 
 
 sd_interface sd (
-  .clk(clk_in),  
+  .clk(clk_25mhz),  
   .switch_load(switch_load), 
   .addr_BRAM(BRAM_addr),  
   .cart_cfg_upd(cfg_upd_in), 
@@ -97,13 +97,21 @@ sd_interface sd (
   .LED(LED[7:0])
 );
 
+ila_0 proby (
+	.clk(clk_25mhz), // input wire clk
+	.probe0(switch_load),
+	.probe1(SD_write), // input wire [0:0]  probe0  
+	.probe2(SD_data), // input wire [7:0]  probe1 
+	.probe3(BRAM_addr) // input wire [14:0]  probe2
+);
+
 blk_mem_gen_0 prgrom_bram (
   .clka(clk_in),    // input wire clka
   .wea(prgrom_bram_we),      // input wire [0 : 0] wea
   .addra(prgrom_bram_a),  // input wire [14 : 0] addra
   .dina(prg_d_in),    // input wire [7 : 0] dina
   .douta(prgrom_bram_dout),  // output wire [7 : 0] douta
-  .clkb(clk_in),    // input wire clkb
+  .clkb(clk_25mhz),    // input wire clkb
   .web(SD_write),      // input wire [0 : 0] web
   .addrb(BRAM_addr),  // input wire [14 : 0] addrb
   .dinb(SD_data),    // input wire [7 : 0] dinb
@@ -125,6 +133,15 @@ dual_port_ram_sync #(.ADDR_WIDTH(13),
   .din_a(chr_d_in),
   .dout_a(chrrom_pat_bram_dout)
 );
+
+  clk_wiz_0 instance_name
+   (
+    // Clock out ports
+    .clk_out1(clk_25mhz),     // output clk_out1
+   // Clock in ports
+    .clk_in1(clk_in));      // input clk_in1
+
+
 
 assign ciram_nce_out      = ~chr_a_in[13];
 assign ciram_a10_out      = (cfg_in[16])    ? chr_a_in[10] : chr_a_in[11];
